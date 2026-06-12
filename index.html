@@ -1,0 +1,1655 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Techno City - Open World Adventure</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+
+        body {
+            background: #0a0a0a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            color: white;
+        }
+
+
+        #gameContainer {
+            position: relative;
+            box-shadow: 0 0 50px rgba(0, 150, 255, 0.3);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+
+        canvas {
+            display: block;
+            background: #2d5016;
+            cursor: crosshair;
+        }
+
+
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+            z-index: 10;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+
+        .ui-left, .ui-right {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+
+        .ui-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+
+        .health-bar {
+            width: 150px;
+            height: 20px;
+            background: rgba(0,0,0,0.5);
+            border: 2px solid white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff3333, #ff6666);
+            transition: width 0.3s;
+        }
+
+
+        .wanted-stars {
+            color: #888;
+            font-size: 24px;
+            letter-spacing: 4px;
+        }
+
+
+        .wanted-stars.active {
+            color: #ff3333;
+            text-shadow: 0 0 10px #ff0000;
+            animation: pulse 1s infinite;
+        }
+
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+
+        .minimap {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 150px;
+            height: 150px;
+            background: rgba(0,0,0,0.7);
+            border: 3px solid white;
+            border-radius: 8px;
+            z-index: 10;
+        }
+
+
+        #startScreen, #gameOverScreen, #missionScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, rgba(10,10,40,0.95), rgba(20,20,60,0.95));
+            z-index: 20;
+            text-align: center;
+        }
+
+
+        .game-title {
+            font-size: 56px;
+            font-weight: 900;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            animation: titleGlow 3s ease-in-out infinite;
+        }
+
+
+        @keyframes titleGlow {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.3); }
+        }
+
+
+        .game-subtitle {
+            font-size: 20px;
+            color: #aaa;
+            margin-bottom: 40px;
+            max-width: 500px;
+            line-height: 1.6;
+        }
+
+
+        .btn {
+            padding: 15px 50px;
+            font-size: 20px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 10px;
+            pointer-events: all;
+        }
+
+
+        .btn-primary {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: #1a1a2e;
+        }
+
+
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(255, 107, 107, 0.4);
+        }
+
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px 40px;
+            margin-top: 30px;
+            text-align: left;
+            font-size: 14px;
+            color: #ccc;
+        }
+
+
+        .control-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+
+        .key {
+            display: inline-block;
+            background: rgba(255,255,255,0.15);
+            padding: 5px 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.3);
+            font-family: monospace;
+            font-weight: bold;
+            min-width: 40px;
+            text-align: center;
+        }
+
+
+        .hidden {
+            display: none !important;
+        }
+
+
+        .mission-text {
+            font-size: 24px;
+            color: #feca57;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px rgba(254, 202, 87, 0.5);
+        }
+
+
+        .mission-desc {
+            font-size: 16px;
+            color: #ddd;
+            margin-bottom: 30px;
+        }
+
+
+        #notification {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            padding: 12px 30px;
+            border-radius: 25px;
+            border: 2px solid #feca57;
+            color: #feca57;
+            font-weight: bold;
+            font-size: 16px;
+            z-index: 15;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+
+        #notification.show {
+            opacity: 1;
+        }
+
+
+        /* Mobile controls */
+        #mobileControls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            display: none;
+            gap: 10px;
+            z-index: 15;
+        }
+
+
+        .mobile-btn {
+            width: 60px;
+            height: 60px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.4);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            user-select: none;
+            touch-action: none;
+        }
+
+
+        .mobile-btn:active {
+            background: rgba(255,255,255,0.4);
+        }
+
+
+        .mobile-group {
+            display: flex;
+            gap: 10px;
+        }
+
+
+        @media (max-width: 768px) {
+            #mobileControls {
+                display: flex;
+            }
+            .controls-grid {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+
+<div id="gameContainer">
+    <canvas id="gameCanvas" width="1000" height="700"></canvas>
+    
+    <div id="ui">
+        <div class="ui-left">
+            <div class="ui-item">
+                <span>HEALTH</span>
+                <div class="health-bar">
+                    <div class="health-fill" id="healthFill" style="width: 100%"></div>
+                </div>
+            </div>
+            <div class="ui-item">
+                <span style="color: #feca57">💰 $<span id="money">0</span></span>
+            </div>
+        </div>
+        <div class="ui-right">
+            <div class="ui-item wanted-stars" id="wantedStars">
+                ★★★★★
+            </div>
+            <div class="ui-item" id="vehicleInfo" style="opacity: 0;">
+                <span style="color: #48dbfb">🚗 <span id="speed">0</span> km/h</span>
+            </div>
+        </div>
+    </div>
+
+
+    <canvas id="minimap" class="minimap" width="150" height="150"></canvas>
+
+
+    <div id="notification"></div>
+
+
+    <!-- Start Screen -->
+    <div id="startScreen">
+        <div class="game-title">Techno City</div>
+        <div class="game-subtitle">Explore the open world, complete missions, drive cars, and survive the city!</div>
+        <button class="btn btn-primary" onclick="startGame()">Start Game</button>
+        <div class="controls-grid">
+            <div class="control-item"><span class="key">WASD</span> Move / Drive</div>
+            <div class="control-item"><span class="key">E</span> Enter / Exit Vehicle</div>
+            <div class="control-item"><span class="key">SHIFT</span> Run</div>
+            <div class="control-item"><span class="key">SPACE</span> Handbrake</div>
+            <div class="control-item"><span class="key">P</span> Pause</div>
+            <div class="control-item"><span class="key">M</span> Map</div>
+        </div>
+    </div>
+
+
+    <!-- Mission Complete Screen -->
+    <div id="missionScreen" class="hidden">
+        <div class="mission-text" id="missionTitle">Mission Complete!</div>
+        <div class="mission-desc" id="missionDesc">Reward: $1000</div>
+        <button class="btn btn-primary" onclick="nextMission()">Continue</button>
+    </div>
+
+
+    <!-- Game Over Screen -->
+    <div id="gameOverScreen" class="hidden">
+        <div class="game-title" style="font-size: 40px;">WASTED</div>
+        <div class="game-subtitle" id="finalStats"></div>
+        <button class="btn btn-primary" onclick="restartGame()">Try Again</button>
+    </div>
+
+
+    <!-- Mobile Controls -->
+    <div id="mobileControls">
+        <div class="mobile-group">
+            <div class="mobile-btn" id="btnLeft">←</div>
+            <div class="mobile-btn" id="btnRight">→</div>
+        </div>
+        <div class="mobile-group">
+            <div class="mobile-btn" id="btnUp">↑</div>
+            <div class="mobile-btn" id="btnDown">↓</div>
+            <div class="mobile-btn" id="btnAction">E</div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const minimapCanvas = document.getElementById('minimap');
+const minimapCtx = minimapCanvas.getContext('2d');
+
+
+// Audio Context
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+const audioCtx = new AudioContext();
+
+
+function playSound(type) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    const now = audioCtx.currentTime;
+
+
+    switch(type) {
+        case 'start':
+            osc.frequency.setValueAtTime(400, now);
+            osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            osc.start(now); osc.stop(now + 0.3);
+            break;
+        case 'coin':
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(900, now);
+            osc.frequency.setValueAtTime(1200, now + 0.05);
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+            osc.start(now); osc.stop(now + 0.15);
+            break;
+        case 'hit':
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, now);
+            osc.frequency.exponentialRampToValueAtTime(50, now + 0.2);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+            osc.start(now); osc.stop(now + 0.2);
+            break;
+        case 'siren':
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.linearRampToValueAtTime(900, now + 0.2);
+            osc.frequency.linearRampToValueAtTime(600, now + 0.4);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+            osc.start(now); osc.stop(now + 0.4);
+            break;
+        case 'engine':
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(80 + Math.random() * 40, now);
+            gain.gain.setValueAtTime(0.05, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            osc.start(now); osc.stop(now + 0.1);
+            break;
+        case 'mission':
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(523, now);
+            osc.frequency.setValueAtTime(659, now + 0.1);
+            osc.frequency.setValueAtTime(784, now + 0.2);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            osc.start(now); osc.stop(now + 0.3);
+            break;
+    }
+}
+
+
+// Game Constants
+const TILE_SIZE = 40;
+const WORLD_WIDTH = 120;
+const WORLD_HEIGHT = 120;
+const VIEW_WIDTH = canvas.width;
+const VIEW_HEIGHT = canvas.height;
+
+
+// Tile Types
+const TILES = {
+    GRASS: 0,
+    ROAD: 1,
+    BUILDING: 2,
+    SIDEWALK: 3,
+    PARK: 4,
+    WATER: 5
+};
+
+
+// Game State
+let gameState = 'menu';
+let currentMission = 0;
+let money = 0;
+let wantedLevel = 0;
+let wantedTimer = 0;
+let showMap = false;
+
+
+// World Data
+let world = [];
+let buildings = [];
+
+
+// Camera
+let camera = { x: 0, y: 0 };
+
+
+// Input
+const keys = {};
+let touchInput = { up: false, down: false, left: false, right: false, action: false };
+
+
+// Player
+const player = {
+    x: 1000,
+    y: 1000,
+    width: 20,
+    height: 20,
+    speed: 0,
+    maxSpeed: 4,
+    runSpeed: 7,
+    angle: 0,
+    health: 100,
+    inVehicle: null,
+    invincible: 0
+};
+
+
+// Vehicles
+let vehicles = [];
+
+
+// Pedestrians
+let pedestrians = [];
+
+
+// Police
+let police = [];
+
+
+// Items
+let items = [];
+
+
+// Particles
+let particles = [];
+
+
+// Missions
+const missions = [
+    { title: "Welcome to Techno City", desc: "Walk to the yellow marker to start your journey", targetX: 20, targetY: 20, reward: 500, type: 'goto' },
+    { title: "First Drive", desc: "Find a car and drive to the marker", targetX: 80, targetY: 30, reward: 1000, type: 'drive' },
+    { title: "Package Delivery", desc: "Collect all 5 packages in the city", reward: 1500, type: 'collect', collected: 0, total: 5 },
+    { title: "Lose the Cops", desc: "Get wanted level and escape the police", reward: 2000, type: 'escape' },
+    { title: "City Explorer", desc: "Visit all 4 corners of the map", reward: 2500, type: 'explore', visited: [false, false, false, false] }
+];
+
+
+// Generate World
+function generateWorld() {
+    world = [];
+    buildings = [];
+    vehicles = [];
+    pedestrians = [];
+    items = [];
+    police = [];
+    
+    // Initialize with grass
+    for (let y = 0; y < WORLD_HEIGHT; y++) {
+        world[y] = [];
+        for (let x = 0; x < WORLD_WIDTH; x++) {
+            world[y][x] = TILES.GRASS;
+        }
+    }
+    
+    // Create road grid
+    const roadSpacing = 12;
+    for (let y = 0; y < WORLD_HEIGHT; y++) {
+        for (let x = 0; x < WORLD_WIDTH; x++) {
+            // Main roads
+            if (x % roadSpacing === 0 || x % roadSpacing === 1 || 
+                y % roadSpacing === 0 || y % roadSpacing === 1) {
+                world[y][x] = TILES.ROAD;
+            }
+            // Sidewalks
+            else if (x % roadSpacing === 2 || x % roadSpacing === roadSpacing - 1 ||
+                     y % roadSpacing === 2 || y % roadSpacing === roadSpacing - 1) {
+                world[y][x] = TILES.SIDEWALK;
+            }
+        }
+    }
+    
+    // Add some parks
+    for (let i = 0; i < 8; i++) {
+        const px = Math.floor(Math.random() * (WORLD_WIDTH - 10)) + 5;
+        const py = Math.floor(Math.random() * (WORLD_HEIGHT - 10)) + 5;
+        for (let y = py; y < py + 6 && y < WORLD_HEIGHT - 2; y++) {
+            for (let x = px; x < px + 6 && x < WORLD_WIDTH - 2; x++) {
+                if (world[y][x] === TILES.GRASS) {
+                    world[y][x] = TILES.PARK;
+                }
+            }
+        }
+    }
+    
+    // Add buildings in blocks
+    for (let by = 3; by < WORLD_HEIGHT; by += roadSpacing) {
+        for (let bx = 3; bx < WORLD_WIDTH; bx += roadSpacing) {
+            if (Math.random() > 0.3) {
+                const bw = Math.floor(Math.random() * 4) + 3;
+                const bh = Math.floor(Math.random() * 4) + 3;
+                for (let y = by; y < by + bh && y < WORLD_HEIGHT - 2; y++) {
+                    for (let x = bx; x < bx + bw && x < WORLD_WIDTH - 2; x++) {
+                        if (world[y][x] === TILES.GRASS) {
+                            world[y][x] = TILES.BUILDING;
+                        }
+                    }
+                }
+                buildings.push({
+                    x: bx * TILE_SIZE,
+                    y: by * TILE_SIZE,
+                    width: bw * TILE_SIZE,
+                    height: bh * TILE_SIZE,
+                    color: `hsl(${Math.random() * 60 + 200}, 30%, ${Math.random() * 30 + 30}%)`
+                });
+            }
+        }
+    }
+    
+    // Spawn vehicles on roads
+    for (let i = 0; i < 40; i++) {
+        let vx, vy;
+        do {
+            vx = Math.floor(Math.random() * WORLD_WIDTH);
+            vy = Math.floor(Math.random() * WORLD_HEIGHT);
+        } while (world[vy][vx] !== TILES.ROAD);
+        
+        vehicles.push({
+            x: vx * TILE_SIZE + TILE_SIZE/2,
+            y: vy * TILE_SIZE + TILE_SIZE/2,
+            width: 36,
+            height: 20,
+            angle: Math.random() > 0.5 ? 0 : Math.PI/2,
+            speed: 0,
+            maxSpeed: 3 + Math.random() * 4,
+            color: `hsl(${Math.random() * 360}, 70%, 50%)`,
+            type: Math.random() > 0.8 ? 'truck' : 'car',
+            driver: null
+        });
+    }
+    
+    // Spawn pedestrians on sidewalks
+    for (let i = 0; i < 60; i++) {
+        let px, py;
+        do {
+            px = Math.floor(Math.random() * WORLD_WIDTH);
+            py = Math.floor(Math.random() * WORLD_HEIGHT);
+        } while (world[py][px] !== TILES.SIDEWALK && world[py][px] !== TILES.PARK);
+        
+        pedestrians.push({
+            x: px * TILE_SIZE + TILE_SIZE/2,
+            y: py * TILE_SIZE + TILE_SIZE/2,
+            width: 14,
+            height: 14,
+            angle: Math.random() * Math.PI * 2,
+            speed: 0.5 + Math.random() * 1,
+            panic: 0,
+            color: `hsl(${Math.random() * 360}, 60%, 60%)`
+        });
+    }
+    
+    // Spawn money items
+    for (let i = 0; i < 30; i++) {
+        let ix, iy;
+        do {
+            ix = Math.floor(Math.random() * (WORLD_WIDTH - 10)) + 5;
+            iy = Math.floor(Math.random() * (WORLD_HEIGHT - 10)) + 5;
+        } while (world[iy][ix] === TILES.BUILDING || world[iy][ix] === TILES.WATER);
+        
+        items.push({
+            x: ix * TILE_SIZE + TILE_SIZE/2,
+            y: iy * TILE_SIZE + TILE_SIZE/2,
+            type: 'money',
+            value: 50 + Math.floor(Math.random() * 150),
+            collected: false
+        });
+    }
+    
+    // Spawn health packs
+    for (let i = 0; i < 10; i++) {
+        let ix, iy;
+        do {
+            ix = Math.floor(Math.random() * (WORLD_WIDTH - 10)) + 5;
+            iy = Math.floor(Math.random() * (WORLD_HEIGHT - 10)) + 5;
+        } while (world[iy][ix] === TILES.BUILDING || world[iy][ix] === TILES.WATER);
+        
+        items.push({
+            x: ix * TILE_SIZE + TILE_SIZE/2,
+            y: iy * TILE_SIZE + TILE_SIZE/2,
+            type: 'health',
+            collected: false
+        });
+    }
+    
+    // Mission packages for collect mission
+    if (missions[2]) {
+        for (let i = 0; i < 5; i++) {
+            let ix, iy;
+            do {
+                ix = Math.floor(Math.random() * (WORLD_WIDTH - 20)) + 10;
+                iy = Math.floor(Math.random() * (WORLD_HEIGHT - 20)) + 10;
+            } while (world[iy][ix] === TILES.BUILDING);
+            
+            items.push({
+                x: ix * TILE_SIZE + TILE_SIZE/2,
+                y: iy * TILE_SIZE + TILE_SIZE/2,
+                type: 'package',
+                collected: false
+            });
+        }
+    }
+}
+
+
+// Input handling
+document.addEventListener('keydown', (e) => {
+    keys[e.key.toLowerCase()] = true;
+    if (e.key.toLowerCase() === 'p') {
+        if (gameState === 'playing') gameState = 'paused';
+        else if (gameState === 'paused') gameState = 'playing';
+    }
+    if (e.key.toLowerCase() === 'm') {
+        showMap = !showMap;
+    }
+    if (e.key.toLowerCase() === 'e') {
+        interact();
+    }
+});
+
+
+document.addEventListener('keyup', (e) => {
+    keys[e.key.toLowerCase()] = false;
+});
+
+
+// Mobile controls
+function setupMobile() {
+    const addTouch = (id, key) => {
+        const btn = document.getElementById(id);
+        btn.addEventListener('touchstart', (e) => { e.preventDefault(); touchInput[key] = true; });
+        btn.addEventListener('touchend', (e) => { e.preventDefault(); touchInput[key] = false; });
+        btn.addEventListener('mousedown', (e) => { e.preventDefault(); touchInput[key] = true; });
+        btn.addEventListener('mouseup', (e) => { e.preventDefault(); touchInput[key] = false; });
+    };
+    addTouch('btnUp', 'up');
+    addTouch('btnDown', 'down');
+    addTouch('btnLeft', 'left');
+    addTouch('btnRight', 'right');
+    addTouch('btnAction', 'action');
+}
+setupMobile();
+
+
+function isPressed(key) {
+    const k = key.toLowerCase();
+    if (k === 'up') return keys['w'] || keys['arrowup'] || touchInput.up;
+    if (k === 'down') return keys['s'] || keys['arrowdown'] || touchInput.down;
+    if (k === 'left') return keys['a'] || keys['arrowleft'] || touchInput.left;
+    if (k === 'right') return keys['d'] || keys['arrowright'] || touchInput.right;
+    if (k === 'run') return keys['shift'];
+    if (k === 'action') return keys['e'] || touchInput.action;
+    if (k === 'brake') return keys[' '];
+    return keys[k];
+}
+
+
+// Interaction
+function interact() {
+    if (player.inVehicle) {
+        // Exit vehicle
+        player.inVehicle.driver = null;
+        player.x = player.inVehicle.x + Math.cos(player.inVehicle.angle) * 40;
+        player.y = player.inVehicle.y + Math.sin(player.inVehicle.angle) * 40;
+        player.inVehicle = null;
+        playSound('hit');
+        return;
+    }
+    
+    // Find nearest vehicle
+    let nearest = null;
+    let nearestDist = 60;
+    
+    vehicles.forEach(v => {
+        if (v.driver) return;
+        const dx = v.x - player.x;
+        const dy = v.y - player.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < nearestDist) {
+            nearestDist = dist;
+            nearest = v;
+        }
+    });
+    
+    if (nearest) {
+        player.inVehicle = nearest;
+        nearest.driver = player;
+        playSound('start');
+        showNotification("Press WASD to drive, SPACE for handbrake");
+    }
+}
+
+
+// Notification system
+let notifTimer = null;
+function showNotification(text) {
+    const notif = document.getElementById('notification');
+    notif.textContent = text;
+    notif.classList.add('show');
+    clearTimeout(notifTimer);
+    notifTimer = setTimeout(() => {
+        notif.classList.remove('show');
+    }, 3000);
+}
+
+
+// Update logic
+function update() {
+    if (gameState !== 'playing') return;
+    
+    const mission = missions[currentMission];
+    
+    // Update wanted level
+    if (wantedLevel > 0) {
+        wantedTimer++;
+        if (wantedTimer > 600) { // 10 seconds to lose 1 star
+            wantedTimer = 0;
+            wantedLevel--;
+            if (wantedLevel > 0) playSound('siren');
+        }
+    }
+    
+    // Spawn police based on wanted level
+    if (wantedLevel > 0 && police.length < wantedLevel * 2) {
+        if (Math.random() < 0.02) {
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 400 + Math.random() * 200;
+            police.push({
+                x: player.x + Math.cos(angle) * dist,
+                y: player.y + Math.sin(angle) * dist,
+                width: 18,
+                height: 18,
+                speed: 4 + wantedLevel,
+                angle: 0,
+                targetX: player.x,
+                targetY: player.y
+            });
+            playSound('siren');
+        }
+    }
+    
+    // Update player
+    if (player.inVehicle) {
+        updateVehicle(player.inVehicle);
+        player.x = player.inVehicle.x;
+        player.y = player.inVehicle.y;
+    } else {
+        updatePlayerOnFoot();
+    }
+    
+    // Update other vehicles
+    vehicles.forEach(v => {
+        if (!v.driver && v !== player.inVehicle) {
+            updateAIVehicle(v);
+        }
+    });
+    
+    // Update pedestrians
+    pedestrians.forEach(p => {
+        updatePedestrian(p);
+    });
+    
+    // Update police
+    police.forEach((p, i) => {
+        updatePolice(p);
+        if (p.x < 0 || p.x > WORLD_WIDTH * TILE_SIZE || p.y < 0 || p.y > WORLD_HEIGHT * TILE_SIZE) {
+            police.splice(i, 1);
+        }
+    });
+    
+    // Check item collection
+    items.forEach(item => {
+        if (item.collected) return;
+        const dx = item.x - player.x;
+        const dy = item.y - player.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        
+        if (dist < 30) {
+            item.collected = true;
+            if (item.type === 'money') {
+                money += item.value;
+                playSound('coin');
+                showNotification(`+$${item.value}`);
+            } else if (item.type === 'health') {
+                player.health = Math.min(100, player.health + 25);
+                playSound('coin');
+                showNotification("Health +25");
+            } else if (item.type === 'package') {
+                playSound('coin');
+                showNotification("Package collected!");
+                if (mission && mission.type === 'collect') {
+                    mission.collected++;
+                }
+            }
+        }
+    });
+    
+    // Check mission completion
+    checkMission();
+    
+    // Update particles
+    particles = particles.filter(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        return p.life > 0;
+    });
+    
+    // Camera follow
+    camera.x += (player.x - VIEW_WIDTH/2 - camera.x) * 0.1;
+    camera.y += (player.y - VIEW_HEIGHT/2 - camera.y) * 0.1;
+    
+    // Clamp camera
+    camera.x = Math.max(0, Math.min(camera.x, WORLD_WIDTH * TILE_SIZE - VIEW_WIDTH));
+    camera.y = Math.max(0, Math.min(camera.y, WORLD_HEIGHT * TILE_SIZE - VIEW_HEIGHT));
+    
+    // Update UI
+    document.getElementById('money').textContent = money;
+    document.getElementById('healthFill').style.width = player.health + '%';
+    
+    const stars = document.getElementById('wantedStars');
+    let starText = '';
+    for (let i = 0; i < 5; i++) {
+        starText += i < wantedLevel ? '★' : '☆';
+    }
+    stars.textContent = starText;
+    stars.className = 'ui-item wanted-stars' + (wantedLevel > 0 ? ' active' : '');
+    
+    const vehInfo = document.getElementById('vehicleInfo');
+    if (player.inVehicle) {
+        vehInfo.style.opacity = 1;
+        const speed = Math.abs(player.inVehicle.speed) * 20;
+        document.getElementById('speed').textContent = Math.floor(speed);
+    } else {
+        vehInfo.style.opacity = 0;
+    }
+    
+    // Check death
+    if (player.health <= 0) {
+        gameOver();
+    }
+    
+    if (player.invincible > 0) player.invincible--;
+}
+
+
+function updatePlayerOnFoot() {
+    let dx = 0, dy = 0;
+    if (isPressed('left')) dx = -1;
+    if (isPressed('right')) dx = 1;
+    if (isPressed('up')) dy = -1;
+    if (isPressed('down')) dy = 1;
+    
+    const speed = isPressed('run') ? player.runSpeed : player.maxSpeed;
+    
+    if (dx !== 0 || dy !== 0) {
+        const len = Math.sqrt(dx*dx + dy*dy);
+        dx /= len;
+        dy /= len;
+        player.angle = Math.atan2(dy, dx);
+    }
+    
+    const newX = player.x + dx * speed;
+    const newY = player.y + dy * speed;
+    
+    if (!checkBuildingCollision(newX, player.y)) player.x = newX;
+    if (!checkBuildingCollision(player.x, newY)) player.y = newY;
+}
+
+
+function updateVehicle(vehicle) {
+    let accel = 0;
+    let turn = 0;
+    
+    if (isPressed('up')) accel = 0.3;
+    if (isPressed('down')) accel = -0.2;
+    if (isPressed('left')) turn = -0.06;
+    if (isPressed('right')) turn = 0.06;
+    if (isPressed('brake')) {
+        vehicle.speed *= 0.9;
+        accel = 0;
+    }
+    
+    vehicle.speed += accel;
+    vehicle.speed *= 0.96; // friction
+    
+    // Max speed
+    if (vehicle.speed > vehicle.maxSpeed) vehicle.speed = vehicle.maxSpeed;
+    if (vehicle.speed < -vehicle.maxSpeed/2) vehicle.speed = -vehicle.maxSpeed/2;
+    
+    if (Math.abs(vehicle.speed) > 0.5) {
+        vehicle.angle += turn * (vehicle.speed / vehicle.maxSpeed);
+    }
+    
+    const newX = vehicle.x + Math.cos(vehicle.angle) * vehicle.speed;
+    const newY = vehicle.y + Math.sin(vehicle.angle) * vehicle.speed;
+    
+    if (!checkBuildingCollision(newX, newY)) {
+        vehicle.x = newX;
+        vehicle.y = newY;
+    } else {
+        vehicle.speed *= -0.5;
+        playSound('hit');
+        if (player.inVehicle === vehicle) {
+            player.health -= 5;
+            showNotification("Crash! -5 Health");
+        }
+    }
+    
+    // Engine sound
+    if (Math.abs(vehicle.speed) > 1 && Math.random() < 0.1) {
+        playSound('engine');
+    }
+}
+
+
+function updateAIVehicle(v) {
+    // Simple AI: drive forward, turn at obstacles
+    v.speed = Math.min(v.speed + 0.1, v.maxSpeed * 0.6);
+    
+    const newX = v.x + Math.cos(v.angle) * v.speed;
+    const newY = v.y + Math.sin(v.angle) * v.speed;
+    
+    if (checkBuildingCollision(newX, newY) || !isRoad(newX, newY)) {
+        v.angle += Math.PI / 2 + (Math.random() - 0.5);
+        v.speed *= 0.5;
+    } else {
+        v.x = newX;
+        v.y = newY;
+    }
+    
+    // Random turns
+    if (Math.random() < 0.02) {
+        v.angle += (Math.random() - 0.5) * Math.PI / 2;
+    }
+}
+
+
+function updatePedestrian(p) {
+    if (p.panic > 0) {
+        p.panic--;
+        p.speed = 3;
+        // Run away from player
+        const dx = p.x - player.x;
+        const dy = p.y - player.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist > 0) {
+            p.angle = Math.atan2(dy/dist, dx/dist);
+        }
+    } else {
+        p.speed = 0.5 + Math.random() * 1;
+        if (Math.random() < 0.02) {
+            p.angle += (Math.random() - 0.5) * Math.PI;
+        }
+    }
+    
+    const newX = p.x + Math.cos(p.angle) * p.speed;
+    const newY = p.y + Math.sin(p.angle) * p.speed;
+    
+    if (!checkBuildingCollision(newX, newY)) {
+        p.x = newX;
+        p.y = newY;
+    } else {
+        p.angle += Math.PI;
+    }
+    
+    // Check collision with player (on foot)
+    if (!player.inVehicle && player.invincible <= 0) {
+        const dx = p.x - player.x;
+        const dy = p.y - player.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 20) {
+            player.health -= 10;
+            player.invincible = 60;
+            p.panic = 120;
+            playSound('hit');
+            showNotification("Hit pedestrian! -10 Health");
+            wantedLevel = Math.min(5, wantedLevel + 1);
+            wantedTimer = 0;
+        }
+    }
+    
+    // Check vehicle hit
+    if (player.inVehicle) {
+        const dx = p.x - player.inVehicle.x;
+        const dy = p.y - player.inVehicle.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 25 && Math.abs(player.inVehicle.speed) > 2) {
+            p.panic = 180;
+            wantedLevel = Math.min(5, wantedLevel + 1);
+            wantedTimer = 0;
+            playSound('hit');
+            addParticles(p.x, p.y, '#ff0000', 8);
+            showNotification("Wanted Level Increased!");
+        }
+    }
+}
+
+
+function updatePolice(p) {
+    // Chase player
+    const dx = player.x - p.x;
+    const dy = player.y - p.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    
+    if (dist > 0) {
+        p.angle = Math.atan2(dy, dx);
+    }
+    
+    p.x += Math.cos(p.angle) * p.speed;
+    p.y += Math.sin(p.angle) * p.speed;
+    
+    // Damage player if caught
+    if (dist < 25 && player.invincible <= 0) {
+        player.health -= 15;
+        player.invincible = 60;
+        playSound('hit');
+        showNotification("Police caught you! -15 Health");
+    }
+}
+
+
+function checkBuildingCollision(x, y) {
+    const margin = 10;
+    for (let b of buildings) {
+        if (x + margin > b.x && x - margin < b.x + b.width &&
+            y + margin > b.y && y - margin < b.y + b.height) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+function isRoad(x, y) {
+    const tx = Math.floor(x / TILE_SIZE);
+    const ty = Math.floor(y / TILE_SIZE);
+    if (tx < 0 || tx >= WORLD_WIDTH || ty < 0 || ty >= WORLD_HEIGHT) return false;
+    return world[ty][tx] === TILES.ROAD;
+}
+
+
+function checkMission() {
+    const mission = missions[currentMission];
+    if (!mission || mission.completed) return;
+    
+    let completed = false;
+    
+    switch(mission.type) {
+        case 'goto':
+        case 'drive':
+            const dx = mission.targetX * TILE_SIZE - player.x;
+            const dy = mission.targetY * TILE_SIZE - player.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < 50) completed = true;
+            break;
+        case 'collect':
+            if (mission.collected >= mission.total) completed = true;
+            break;
+        case 'escape':
+            if (wantedLevel > 0 && wantedLevel <= 0) completed = true; // This will need adjustment
+            // Actually, let's check if they HAD wanted level and lost it
+            if (wantedLevel === 0 && wantedTimer > 300) completed = true;
+            break;
+        case 'explore':
+            // Check 4 corners
+            if (player.x < 500) mission.visited[0] = true;
+            if (player.x > (WORLD_WIDTH-5) * TILE_SIZE) mission.visited[1] = true;
+            if (player.y < 500) mission.visited[2] = true;
+            if (player.y > (WORLD_HEIGHT-5) * TILE_SIZE) mission.visited[3] = true;
+            if (mission.visited.every(v => v)) completed = true;
+            break;
+    }
+    
+    if (completed) {
+        mission.completed = true;
+        money += mission.reward;
+        playSound('mission');
+        showMissionComplete(mission);
+    }
+}
+
+
+function showMissionComplete(mission) {
+    gameState = 'missionComplete';
+    document.getElementById('missionTitle').textContent = mission.title + " - Complete!";
+    document.getElementById('missionDesc').textContent = `Reward: $${mission.reward} | Total Money: $${money}`;
+    document.getElementById('missionScreen').classList.remove('hidden');
+}
+
+
+function nextMission() {
+    document.getElementById('missionScreen').classList.add('hidden');
+    currentMission++;
+    if (currentMission >= missions.length) {
+        // All missions complete - show win
+        gameState = 'win';
+        showNotification("All missions complete! You are the king of Techno City!");
+    } else {
+        gameState = 'playing';
+        const m = missions[currentMission];
+        showNotification(`New Mission: ${m.title}`);
+    }
+}
+
+
+function gameOver() {
+    gameState = 'gameOver';
+    document.getElementById('finalStats').innerHTML = `
+        Money Earned: $${money}<br>
+        Missions Completed: ${currentMission + 1}/${missions.length}<br>
+        Wanted Level Reached: ${wantedLevel}★
+    `;
+    document.getElementById('gameOverScreen').classList.remove('hidden');
+}
+
+
+// Rendering
+function draw() {
+    // Clear
+    ctx.fillStyle = '#2d5016';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    if (gameState === 'menu') return;
+    
+    ctx.save();
+    ctx.translate(-Math.floor(camera.x), -Math.floor(camera.y));
+    
+    // Draw visible tiles
+    const startX = Math.floor(camera.x / TILE_SIZE);
+    const startY = Math.floor(camera.y / TILE_SIZE);
+    const endX = startX + Math.ceil(VIEW_WIDTH / TILE_SIZE) + 1;
+    const endY = startY + Math.ceil(VIEW_HEIGHT / TILE_SIZE) + 1;
+    
+    for (let y = startY; y <= endY && y < WORLD_HEIGHT; y++) {
+        for (let x = startX; x <= endX && x < WORLD_WIDTH; x++) {
+            if (y < 0 || x < 0) continue;
+            const tile = world[y][x];
+            const px = x * TILE_SIZE;
+            const py = y * TILE_SIZE;
+            
+            switch(tile) {
+                case TILES.GRASS:
+                    ctx.fillStyle = '#4a8c2a';
+                    ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                    // Grass detail
+                    if ((x + y) % 3 === 0) {
+                        ctx.fillStyle = '#5a9c3a';
+                        ctx.fillRect(px + 5, py + 5, 4, 4);
+                    }
+                    break;
+                case TILES.ROAD:
+                    ctx.fillStyle = '#555';
+                    ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                    // Road markings
+                    ctx.fillStyle = '#777';
+                    if (x % 2 === 0) {
+                        ctx.fillRect(px + TILE_SIZE/2 - 1, py + TILE_SIZE/2 - 1, 2, 2);
+                    }
+                    break;
+                case TILES.SIDEWALK:
+                    ctx.fillStyle = '#999';
+                    ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                    ctx.fillStyle = '#aaa';
+                    ctx.fillRect(px + 2, py + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+                    break;
+                case TILES.BUILDING:
+                    ctx.fillStyle = '#444';
+                    ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                    break;
+                case TILES.PARK:
+                    ctx.fillStyle = '#3d7c1a';
+                    ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                    // Tree
+                    ctx.fillStyle = '#2d5c0a';
+                    ctx.beginPath();
+                    ctx.arc(px + TILE_SIZE/2, py + TILE_SIZE/2, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                    break;
+            }
+        }
+    }
+    
+    // Draw buildings with depth
+    buildings.forEach(b => {
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fillRect(b.x + 5, b.y + 5, b.width, b.height);
+        
+        // Building
+        ctx.fillStyle = b.color;
+        ctx.fillRect(b.x, b.y, b.width, b.height);
+        
+        // Roof
+        ctx.fillStyle = 'rgba(255,255,255,0.1)';
+        ctx.fillRect(b.x, b.y, b.width, 10);
+        
+        // Windows
+        ctx.fillStyle = '#87CEEB';
+        for (let wy = b.y + 15; wy < b.y + b.height - 10; wy += 20) {
+            for (let wx = b.x + 10; wx < b.x + b.width - 10; wx += 15) {
+                if (Math.random() > 0.3) { // Some lights on, some off
+                    ctx.fillRect(wx, wy, 8, 12);
+                }
+            }
+        }
+    });
+    
+    // Draw items
+    items.forEach(item => {
+        if (item.collected) return;
+        
+        const bounce = Math.sin(Date.now() / 200) * 5;
+        
+        if (item.type === 'money') {
+            ctx.fillStyle = '#ffd700';
+            ctx.beginPath();
+            ctx.arc(item.x, item.y + bounce, 10, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#daa520';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 12px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('$', item.x, item.y + 4 + bounce);
+        } else if (item.type === 'health') {
+            ctx.fillStyle = '#ff4444';
+            ctx.fillRect(item.x - 8, item.y - 3 + bounce, 16, 6);
+            ctx.fillRect(item.x - 3, item.y - 8 + bounce, 6, 16);
+        } else if (item.type === 'package') {
+            ctx.fillStyle = '#feca57';
+            ctx.fillRect(item.x - 10, item.y - 10 + bounce, 20, 20);
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(item.x - 10, item.y - 10 + bounce, 20, 20);
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 10px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('PKG', item.x, item.y + 4 + bounce);
+        }
+    });
+    
+    // Draw pedestrians
+    pedestrians.forEach(p => {
+        ctx.fillStyle = p.panic > 0 ? '#ff6666' : p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Direction indicator
+        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x + Math.cos(p.angle) * 10, p.y + Math.sin(p.angle) * 10);
+        ctx.stroke();
+    });
+    
+    // Draw police
+    police.forEach(p => {
+        // Siren glow
+        const sirenFlash = Math.floor(Date.now() / 100) % 2 === 0;
+        ctx.fillStyle = sirenFlash ? 'rgba(255,0,0,0.3)' : 'rgba(0,0,255,0.3)';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 20, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.fillStyle = '#1a1a2e';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 9, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Siren
+        ctx.fillStyle = sirenFlash ? '#ff0000' : '#0000ff';
+        ctx.fillRect(p.x - 3, p.y - 12, 6, 4);
+    });
+    
+    // Draw vehicles
+    vehicles.forEach(v => {
+        ctx.save();
+        ctx.translate(v.x, v.y);
+        ctx.rotate(v.angle);
+        
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fillRect(-v.width/2 + 3, -v.height/2 + 3, v.width, v.height);
+        
+        // Body
+        ctx.fillStyle = v.color;
+        ctx.fillRect(-v.width/2, -v.height/2, v.width, v.height);
+        
+        // Roof/cabin
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.fillRect(-v.width/4, -v.height/2 + 2, v.width/2, v.height - 4);
+        
+        // Headlights
+        ctx.fillStyle = '#ffffaa';
+        ctx.fillRect(v.width/2 - 3, -v.height/2 + 2, 3, 4);
+        ctx.fillRect(v.width/2 - 3, v.height/2 - 6, 3, 4);
+        
+        // Taillights
+        ctx.fillStyle = '#ff4444';
+        ctx.fillRect(-v.width/2, -v.height/2 + 2, 3, 4);
+        ctx.fillRect(-v.width/2, v.height/2 - 6, 3, 4);
+        
+        ctx.restore();
+    });
+    
+    // Draw player
+    if (!player.inVehicle) {
+        ctx.save();
+        ctx.translate(player.x, player.y);
+        ctx.rotate(player.angle);
+        
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.beginPath();
+        ctx.arc(3, 3, 10, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Body
+        ctx.fillStyle = player.invincible > 0 && Math.floor(player.invincible / 4) % 2 === 0 ? '#fff' : '#3498db';
+        ctx.beginPath();
+        ctx.arc(0, 0, 10, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Head
+        ctx.fillStyle = '#fdbf60';
+        ctx.beginPath();
+        ctx.arc(0, -2, 7, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Direction indicator
+        ctx.fillStyle = '#2ecc71';
+        ctx.fillRect(0, -3, 14, 6);
+        
+        ctx.restore();
+    }
+    
+    // Draw mission marker
+    const mission = missions[currentMission];
+    if (mission && !mission.completed) {
+        let mx, my;
+        if (mission.type === 'goto' || mission.type === 'drive') {
+            mx = mission.targetX * TILE_SIZE;
+            my = mission.targetY * TILE_SIZE;
+        } else {
+            mx = player.x;
+            my = player.y;
+        }
+        
+        if (mission.type === 'goto' || mission.type === 'drive') {
+            const markerBounce = Math.sin(Date.now() / 300) * 10;
+            ctx.fillStyle = '#feca57';
+            ctx.beginPath();
+            ctx.moveTo(mx, my - 30 + markerBounce);
+            ctx.lineTo(mx - 15, my + markerBounce);
+            ctx.lineTo(mx + 15, my + markerBounce);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 14px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('TARGET', mx, my - 35 + markerBounce);
+        }
+    }
+    
+    // Draw particles
+    particles.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.life / 30;
+        ctx.fillRect(p.x, p.y, p.size, p.size);
+    });
+    ctx.globalAlpha = 1;
+    
+    ctx.restore();
+    
+    // Draw minimap
+    drawMinimap();
+    
+    // Draw big map if enabled
+    if (showMap) {
+        ctx.fillStyle = 'rgba(0,0,0,0.8)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 30px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('MAP - Press M to close', canvas.width/2, 40);
+        
+        const mapScale = 0.15;
+        const mapOffsetX = (canvas.width - WORLD_WIDTH * TILE_SIZE * mapScale) / 2;
+        const mapOffsetY = (canvas.height - WORLD_HEIGHT * TILE_SIZE * mapScale) / 2;
+        
+        for (let y = 0; y < WORLD_HEIGHT; y++) {
+            for (let x = 0; x < WORLD_WIDTH; x++) {
+                const tile = world[y][x];
+                let color = '#2d5016';
+                if (tile === TILES.ROAD) color = '#555';
+                else if (tile === TILES.BUILDING) color = '#444';
+                else if (tile === TILES.SIDEWALK) color = '#999';
+                else if (tile === TILES.PARK) color = '#3d7c1a';
+                
+                ctx.fillStyle = color;
+                ctx.fillRect(mapOffsetX + x * TILE_SIZE * mapScale, mapOffsetY + y * TILE_SIZE * mapScale, TILE_SIZE * mapScale + 1, TILE_SIZE * mapScale + 1);
+            }
+        }
+        
+        // Player on map
+        ctx.fillStyle = '#ff0000';
+        ctx.beginPath();
+        ctx.arc(mapOffsetX + player.x * mapScale, mapOffsetY + player.y * mapScale, 4, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    
+    // Pause overlay
+    if (gameState === 'paused') {
+        ctx.fillStyle = 'rgba(0,0,0,0.7)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 40px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('PAUSED', canvas.width/2, canvas.height/2);
+        ctx.font = '20px monospace';
+        ctx.fillText('Press P to resume', canvas.width/2, canvas.height/2 + 40);
+    }
+}
+
+
+function drawMinimap() {
+    minimapCtx.fillStyle = 'rgba(0,0,0,0.8)';
+    minimapCtx.fillRect(0, 0, 150, 150);
+    
+    const scale = 150 / (WORLD_WIDTH * TILE_SIZE);
+    
+    // Draw simple terrain
+    for (let y = 0; y < WORLD_HEIGHT; y += 4) {
+        for (let x = 0; x < WORLD_WIDTH; x += 4) {
+            const tile = world[y][x];
+            if (tile === TILES.ROAD) {
+                minimapCtx.fillStyle = '#666';
+                minimapCtx.fillRect(x * TILE_SIZE * scale, y * TILE_SIZE * scale, 4 * TILE_SIZE * scale, 4 * TILE_SIZE * scale);
+            } else if (tile === TILES.BUILDING) {
+                minimapCtx.fillStyle = '#444';
+                minimapCtx.fillRect(x * TILE_SIZE * scale, y * TILE_SIZE * scale, 4 * TILE_SIZE * scale, 4 * TILE_SIZE * scale);
+            }
+        }
+    }
+    
+    // Player
+    minimapCtx.fillStyle = '#00ff00';
+    minimapCtx.beginPath();
+    minimapCtx.arc(player.x * scale, player.y * scale, 3, 0, Math.PI * 2);
+    minimapCtx.fill();
+    
+    // Mission marker
+    const mission = missions[currentMission];
+    if (mission && (mission.type === 'goto' || mission.type === 'drive') && !mission.completed) {
+        minimapCtx.fillStyle = '#ffff00';
+        minimapCtx.beginPath();
+        minimapCtx.arc(mission.targetX * TILE_SIZE * scale, mission.targetY * TILE_SIZE * scale, 3, 0, Math.PI * 2);
+        minimapCtx.fill();
+    }
+    
+    // Police
+    minimapCtx.fillStyle = '#ff0000';
+    police.forEach(p => {
+        minimapCtx.beginPath();
+        minimapCtx.arc(p.x * scale, p.y * scale, 2, 0, Math.PI * 2);
+        minimapCtx.fill();
+    });
+}
+
+
+function addParticles(x, y, color, count) {
+    for (let i = 0; i < count; i++) {
+        particles.push({
+            x: x,
+            y: y,
+            vx: (Math.random() - 0.5) * 6,
+            vy: (Math.random() - 0.5) * 6,
+            life: 30,
+            color: color,
+            size: 3 + Math.random() * 3
+        });
+    }
+}
+
+
+// Game Control Functions
+function startGame() {
+    document.getElementById('startScreen').classList.add('hidden');
+    generateWorld();
+    player.x = 1000;
+    player.y = 1000;
+    player.health = 100;
+    player.inVehicle = null;
+    money = 0;
+    wantedLevel = 0;
+    currentMission = 0;
+    missions.forEach(m => {
+        m.completed = false;
+        if (m.type === 'collect') m.collected = 0;
+        if (m.type === 'explore') m.visited = [false, false, false, false];
+    });
+    gameState = 'playing';
+    playSound('start');
+    showNotification("Welcome to Techno City! Find the yellow marker.");
+}
+
+
+function restartGame() {
+    document.getElementById('gameOverScreen').classList.add('hidden');
+    startGame();
+}
+
+
+// Game Loop
+function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+
+// Initialize
+generateWorld();
+gameLoop();
+</script>
+
+
+</body>
+</html>
